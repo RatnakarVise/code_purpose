@@ -61,27 +61,21 @@ Your tasks:
 1) Provide a concise **explanation**:
    - Purpose: what does this ABAP code do?
    - Key statements: SELECT, READ TABLE, LOOP, SORT, FORM/METHOD usage.
+   - You need to mention each and every function the abap code is performing.
+     - If multiple select queries are there, mention each of them with each and every field fetched with exact condition.
+     - If FM is present explain what FM is doing.
+     - IF BADI/Enhancement is present, explain what it is doing.
 
 2) Provide an actionable **LLM remediation prompt**:
    - Include original code snippet.
    - Create the detailed explanation using the context provided.
 
-SCOPE & CHECKLIST (consider each item; mention only those that apply)
-- Database access: SELECT/SELECT SINGLE, field lists vs SELECT *, key usage, WHERE clauses, ORDER BY, buffering, FOR ALL ENTRIES pre-check, joins vs nested selects, SELECT in LOOP (N+1), UP TO 1 ROWS semantics.
-- Internal tables: types (standard/sorted/hashed), keys, SORT vs READ TABLE, table expressions itab[ key ], line_exists( ), TRANSPORTING NO FIELDS, binary search correctness, memory/perf in loops.
-- Control flow & modularization: LOOP/ENDLOOP, nested loops, FORM/METHOD/CLASS usage, interface design, reusability.
-- Error handling: sy-subrc patterns, exception classes, MESSAGE vs raising exceptions, ASSERT/CHECK preconditions.
-- Modernization (Clean ABAP): inline DATA, VALUE/NEW, CORRESPONDING #, string templates, FILTER/REDUCE, avoiding obsolete statements.
-- S/4HANA simplifications: deprecated objects/APIs, table/model changes, CDS/AMDP suitability (only if relevant).
-- Performance: algorithmic complexity, sorting once vs repeated sorts, use proper table types/keys, avoid unnecessary conversions.
-- Security & compliance: AUTHORITY-CHECK, input validation, escaping, RFC/background safety, COMMIT/ROLLBACK usage (do not relocate).
-- Internationalization/Unicode/time: dates/times/time zones/numeric precision, string handling.
-- Testability: ABAP Unit seams, dependency inversion, test doubles.
-
-
 RULES
+- All the explaination should be in order of the code.
+- Do not miss or exclude any piece of code.
 - Be factual and code-grounded. If any input is missing, proceed using only what is present and state that limitation.
 - Do NOT introduce new business logic; keep behavior equivalent 
+
 
 Return ONLY strict JSON:
 {{
