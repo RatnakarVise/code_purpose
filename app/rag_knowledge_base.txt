@@ -1,4 +1,5 @@
-Create detail explaination of the code provided
+Explain the given ABAP code in detail. Describe the purpose of the program, meaning of each variable, field, and statement. Finally, provide a pseudo code representation for better understanding.
+Explaination should be in order of the code and should not skip any piece of code
 1. ABAP Program Structure
     An ABAP program consists of declarations, event blocks, and processing logic.
     REPORT – defines the executable program name.
@@ -59,4 +60,4 @@ Create detail explaination of the code provided
     FORMs / Methods → encapsulate reusable logic.
 
 
-Go line by line and create detail prompt with full logic
+Go line by line and create detail prompt with full logic. 

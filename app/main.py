@@ -80,27 +80,9 @@ def build_chain(snippet: ABAPSnippet):
     SYSTEM_MSG = "You are a precise ABAP reviewer and explainer. Respond in strict JSON only."
 
     USER_TEMPLATE = """
-You are evaluating an ABAP code snippet.
-
-Your tasks:
-1) Provide a concise **explanation**:
-   - Purpose: what does this ABAP code do?
-   - Key statements: SELECT, READ TABLE, LOOP, SORT, FORM/METHOD usage.
-   - Mention each and every function the ABAP code is performing.
-     * If multiple SELECTs: mention each one with exact fields and conditions.
-     * If FM is present: explain what FM is doing.
-     * If BADI/Enhancement is present: explain what it is doing.
-
-2) Provide an actionable **LLM remediation prompt**:
-   - Include original code snippet.
-   - Create the detailed explanation using the context provided.
-
-RULES:
-- Explanations must follow code order.
-- Do not omit any part of the code.
-- Be factual and code-grounded.
-- If info is missing, state the limitation.
-- Do NOT invent new business logic.
+You are an SAP ABAP Developer with 20 years of experience.
+Based on the RAG context and ABAP code,generate a complete and professionally 
+formatted explaination .
 
 Return ONLY strict JSON:
 {{
@@ -157,7 +139,7 @@ async def explain_abap(snippets: List[ABAPSnippet]):
             "inc_name": snippet.inc_name,
             "type": snippet.type,
             "name": snippet.name,
-            "code": snippet.code,
+            "code": "",
             "purpose": llm_result.get("explanation", ""),
         })
 
