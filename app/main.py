@@ -81,6 +81,7 @@ def build_chain(snippet: ABAPSnippet):
 
     USER_TEMPLATE = """
 You are an SAP ABAP Developer with 20 years of experience.
+Make sure to **always include one sentence that confirms which RAG knowledge base parts you used.**
 Based on the RAG context and ABAP code,generate a complete and professionally 
 formatted explaination .
 
