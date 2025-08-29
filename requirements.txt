@@ -5,3 +5,5 @@ langchain
 langchain-openai
 openai
 dotenv
+langchain-community
+chromadb

@@ -1,10 +1,13 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field, field_validator
 from typing import List, Optional
-import os, json
-from langchain_openai import ChatOpenAI
+import os, json, gc
+from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import JsonOutputParser
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_community.vectorstores import Chroma
+from langchain_community.document_loaders import TextLoader
 from dotenv import load_dotenv
 
 # --- Load environment ---
@@ -22,6 +25,7 @@ OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o")
 
 app = FastAPI(title="ABAP Code Explanation API")
 
+
 # ---- Strict input models ----
 class ABAPSnippet(BaseModel):
     pgm_name: Optional[str] = None
@@ -29,8 +33,6 @@ class ABAPSnippet(BaseModel):
     type: Optional[str] = None
     name: Optional[str] = None
     code: str
-    # context: Optional[str] = None
-    # suggested_improvements: Optional[List[str]] = Field(default_factory=list)
 
     @field_validator("code", mode="before")
     @classmethod
@@ -46,40 +48,63 @@ def summarize_snippet(snippet: ABAPSnippet) -> dict:
         "unit_type": snippet.type,
         "unit_name": snippet.name,
         "code": snippet.code,
-        # "context": snippet.context,
-        # "suggested_improvements": snippet.suggested_improvements,
     }
 
 
-# ---- LangChain Prompt ----
-SYSTEM_MSG = "You are a precise ABAP reviewer and explainer. Respond in strict JSON only."
+# --- Load RAG knowledge base ---
+rag_file_path = os.path.join(os.path.dirname(__file__), "rag_knowledge_base.txt")
+loader = TextLoader(file_path=rag_file_path, encoding="utf-8")
+documents = loader.load()
 
-USER_TEMPLATE = """
+# Split into chunks
+text_splitter = RecursiveCharacterTextSplitter(chunk_size=20000, chunk_overlap=200)
+docs = text_splitter.split_documents(documents)
+
+# Vectorstore
+embedding = OpenAIEmbeddings()
+vectorstore = Chroma.from_documents(docs, embedding)
+retriever = vectorstore.as_retriever()
+
+
+def cleanup_memory(*args):
+    for var in args:
+        del var
+    gc.collect()
+
+
+def build_chain(snippet: ABAPSnippet):
+    """Builds and returns the chain with retrieved context injected."""
+    retrieved_docs = retriever.get_relevant_documents(snippet.code)
+    retrieved_context = "\n\n".join([doc.page_content for doc in retrieved_docs])
+
+    SYSTEM_MSG = "You are a precise ABAP reviewer and explainer. Respond in strict JSON only."
+
+    USER_TEMPLATE = """
 You are evaluating an ABAP code snippet.
 
 Your tasks:
 1) Provide a concise **explanation**:
    - Purpose: what does this ABAP code do?
    - Key statements: SELECT, READ TABLE, LOOP, SORT, FORM/METHOD usage.
-   - You need to mention each and every function the abap code is performing.
-     - If multiple select queries are there, mention each of them with each and every field fetched with exact condition.
-     - If FM is present explain what FM is doing.
-     - IF BADI/Enhancement is present, explain what it is doing.
+   - Mention each and every function the ABAP code is performing.
+     * If multiple SELECTs: mention each one with exact fields and conditions.
+     * If FM is present: explain what FM is doing.
+     * If BADI/Enhancement is present: explain what it is doing.
 
 2) Provide an actionable **LLM remediation prompt**:
    - Include original code snippet.
    - Create the detailed explanation using the context provided.
 
-RULES
-- All the explaination should be in order of the code.
-- Do not miss or exclude any piece of code.
-- Be factual and code-grounded. If any input is missing, proceed using only what is present and state that limitation.
-- Do NOT introduce new business logic; keep behavior equivalent 
-
+RULES:
+- Explanations must follow code order.
+- Do not omit any part of the code.
+- Be factual and code-grounded.
+- If info is missing, state the limitation.
+- Do NOT invent new business logic.
 
 Return ONLY strict JSON:
 {{
-  "explanation": "<concise explanation of ABAP code>",
+  "explanation": "<concise explanation of ABAP code>"
 }}
 
 Unit metadata:
@@ -88,28 +113,33 @@ Unit metadata:
 - Unit type: {type}
 - Unit name: {name}
 
-System context:
+System context (from knowledge base):
+{retrieved_context}
+
+Snippet JSON:
 {context_json}
 """
 
-prompt = ChatPromptTemplate.from_messages([
-    ("system", SYSTEM_MSG),
-    ("user", USER_TEMPLATE),
-])
+    prompt = ChatPromptTemplate.from_messages([
+        ("system", SYSTEM_MSG),
+        ("user", USER_TEMPLATE),
+    ])
 
-llm = ChatOpenAI(model=OPENAI_MODEL, temperature=0)
-parser = JsonOutputParser()
-chain = prompt | llm | parser
+    llm = ChatOpenAI(model=OPENAI_MODEL, temperature=0)
+    parser = JsonOutputParser()
+    return prompt | llm | parser, retrieved_context
 
 
 def llm_explain(snippet: ABAPSnippet):
     ctx_json = json.dumps(summarize_snippet(snippet), ensure_ascii=False, indent=2)
+    chain, retrieved_context = build_chain(snippet)
     return chain.invoke({
         "context_json": ctx_json,
         "pgm_name": snippet.pgm_name,
         "inc_name": snippet.inc_name,
         "type": snippet.type,
         "name": snippet.name,
+        "retrieved_context": retrieved_context,
     })
 
 
@@ -127,9 +157,8 @@ async def explain_abap(snippets: List[ABAPSnippet]):
             "inc_name": snippet.inc_name,
             "type": snippet.type,
             "name": snippet.name,
-            "code": snippet.code,  # keep raw ABAP code outside response for safety
+            "code": snippet.code,
             "purpose": llm_result.get("explanation", ""),
-            # "llm_prompt": llm_result.get("llm_prompt", "")
         })
 
     return results
