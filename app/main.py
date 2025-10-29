@@ -79,7 +79,7 @@ def build_chain(snippet: ABAPSnippet):
     retrieved_docs = retriever.get_relevant_documents(snippet.code)
     retrieved_context = "\n\n".join([doc.page_content for doc in retrieved_docs])
 
-    SYSTEM_MSG = "You are a precise ABAP reviewer and explainer. Respond in strict JSON only."
+    SYSTEM_MSG = "You are a precise ABAP reviewer and explainer. For every select query you should first list down all fields, tables and where condition Respond in strict JSON only."
 
     USER_TEMPLATE = """
 You are an SAP ABAP Developer with 20 years of experience.
