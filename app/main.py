@@ -3,9 +3,11 @@ from pydantic import BaseModel, Field, field_validator
 from typing import List, Optional
 import os, json, gc
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
-from langchain.prompts import ChatPromptTemplate
+# from langchain.prompts import ChatPromptTemplate
+from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import JsonOutputParser
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+# from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import Chroma
 from langchain_community.document_loaders import TextLoader
 from dotenv import load_dotenv
