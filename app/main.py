@@ -76,7 +76,7 @@ def cleanup_memory(*args):
 
 def build_chain(snippet: ABAPSnippet):
     """Builds and returns the chain with retrieved context injected."""
-    retrieved_docs = retriever.get_relevant_documents(snippet.code)
+    retrieved_docs = retriever.invoke(snippet.code)
     retrieved_context = "\n\n".join([doc.page_content for doc in retrieved_docs])
 
     SYSTEM_MSG = "You are a precise ABAP reviewer and explainer. For every select query you should first list down all fields, tables and where condition Respond in strict JSON only."
