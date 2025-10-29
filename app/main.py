@@ -21,7 +21,7 @@ if openai_api_key:
     os.environ["OPENAI_API_KEY"] = openai_api_key
 os.environ["LANGCHAIN_TRACING_V2"] = "true"
 
-OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o")
+OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-5")
 
 app = FastAPI(title="ABAP Code Explanation API")
 
